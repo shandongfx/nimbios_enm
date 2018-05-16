@@ -6,6 +6,6 @@
 .DS_Store?
 *.Rproj
 output
-!output/GIS\ polygon/
-data
+data/*
+!data/GIS\ polygon/*
 oldfiles
