@@ -7,5 +7,5 @@
 *.Rproj
 output
 data/*
-!data/GIS\ polygon/*
+!data/GIS\ polygon/
 oldfiles
