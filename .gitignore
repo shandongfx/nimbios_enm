@@ -4,7 +4,7 @@
 .Ruserdata
 .DS_Store
 .DS_Store?
-*.Rproj
+#*.Rproj
 output
 data/*
 !data/GIS\ polygon/
