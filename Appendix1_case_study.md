@@ -79,7 +79,8 @@ In our example, we use bioclimatic variables (downloaded from worldclim.org) as 
 #####Thread 5 
 
 ```r
-# prepare folders for data input and output
+# prepare a folder in which downloaded and processed data will be input and a folder 
+# for model outputs
 if(!file.exists("data")) dir.create("data")
 if(!file.exists("data/bioclim")) dir.create("data/bioclim")
 if(!file.exists("data/studyarea")) dir.create("data/studyarea")
@@ -103,8 +104,7 @@ clim <- raster::stack(clim_list)
 ####2.1.1 simple Raster manipulation    
 
 ```r
-# we want the new layer to be 10 times coarser at each axis (100 times coarser)
-# read current resolution
+# we want the new layer to be 10 times coarser at each axis (100 times coarser). In essence, we are resampling the resolution from 10 min to 100 min.
 bio1 <- clim[[1]]
 bio1
 ```
@@ -152,7 +152,7 @@ extent(bio1)
 # define new resolution
 newRaster <- raster( nrow= nrow(bio1)/10 , ncol= ncol(bio1)/10 )
 
-# define extent
+# define the extent of the new coarser resolution raster
 extent(newRaster) <- extent(bio1)
 
 # fill the new layer with new values
@@ -163,20 +163,26 @@ plot(bio1)
 ![](Appendix1_case_study_files/figure-html/raster_manipulation-1.png)<!-- -->
 
 ```r
-plot(newRaster) # new layer seems coarser
+plot(newRaster) 
 ```
 
 ![](Appendix1_case_study_files/figure-html/raster_manipulation-2.png)<!-- -->
+
+```r
+# when viewing the new layer, we see that it appears coarser
+```
 
 ####2.1.2 reclassify raster layer    
 
 
 ```r
-# we want to classify the world into two classes based on temperature, high > mean & low < mean
+# For example, if we want to classify the world into two classes based on temperature, areas that are higher than 100 and areas that are lower than 100...we would 
+
 myLayer<- raster("data/bioclim/bio1.bil")
 
-# values smaller than meanT becomes 1; values larger than meanT will be 2
-myMethod <- c(-Inf, 100, 1,  100, Inf, 2)
+# values smaller than 10C becomes 1; values larger than 10C will be 2
+myMethod <- c(-Inf, 100, 1, # from, to, new value
+              100, Inf, 2)
 myLayer_classified <- reclassify(myLayer,rcl= myMethod)
 plot(myLayer_classified)
 ```
@@ -196,11 +202,11 @@ plot(stack(wet,dry))
 ![](Appendix1_case_study_files/figure-html/raster_calculation-1.png)<!-- -->
 
 ```r
-# calculate the difference
+# To calculate difference between these two rasters
 diff <- wet - dry
 #plot(diff)
 
-# calculate the mean of the two month
+# To calculate the mean between the dry and wet rasters
 twoLayers <- stack(wet,dry)
 meanPPT <- calc(twoLayers,fun=mean)
 #plot(meanPPT)
@@ -208,7 +214,7 @@ meanPPT <- calc(twoLayers,fun=mean)
 # the following code gives the same results
 meanPPT2 <-  (wet + dry)/2
 
-# histogram of one layer
+# to display the histogram of one layer
 hist(twoLayers[[1]])
 ```
 
@@ -220,7 +226,7 @@ hist(twoLayers[[1]])
 ![](Appendix1_case_study_files/figure-html/raster_calculation-2.png)<!-- -->
 
 ```r
-# correlation between different layers
+# to run correlations between different layers
 pairs(twoLayers[[1:2]])
 ```
 
@@ -229,7 +235,7 @@ pairs(twoLayers[[1:2]])
 
 ###2.2 Occurrence data  
 ####2.2.1 Download occurrence data  
-For our example, we download occurrence data of the nine-banded armadillo from GBIF.org (Global Biodiversity Information Facility). 
+For our example, we download occurrence data for the nine-banded armadillo from GBIF.org (Global Biodiversity Information Facility). 
 
 #####Thread 6
 
@@ -252,18 +258,19 @@ if(file.exists("data/occ_raw")){
   write.csv("data/occ_raw.csv")
 }
 
-# to view the first few lines of the occurrence dataset
+# to view the first few lines of the occurrence dataset use:
 # head( occ_raw )
 ```
 
 ####2.2.2 Clean occurrence data
-Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we creatd a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed. This particular piece of code also returns the number of records that are removed from the dataset. Additionally, we remove duplicate records and create a subset of the cleaned data with the duplicates removed. 
+Since some of our records do not have appropriate coordinates and some have missing locational data, we need to remove them from our dataset. To do this, we created a new dataset named “occ_clean”, which is a subset of the “occ_raw” dataset where records with missing latitude and/or longitude are removed. This particular piece of code also returns the number of records that are removed from the dataset. Additionally, we remove duplicate records and create a subset of the cleaned data with the duplicates removed. 
 
-#####Thread 7: remove data without coordinate, remove duplicated coordinates, only keep SPECIMEN data, limit the temporal range of data
+#####Thread 7: remove data without coordinates, remove duplicated coordinates, keep only occurence data associated with an actulal specimen, and limit the temporal range of data
 
 ```r
-# remove erroneous coordinates, where either the latitude or longitude is missing
-occ_clean <- subset(occ_raw,(!is.na(lat))&(!is.na(lon))) #  "!" means the opposite logic value
+# here we remove erroneous coordinates, where either the latitude or longitude is missing
+occ_clean <- subset(occ_raw,(!is.na(lat))&(!is.na(lon))) 
+#  "!" means the opposite logic value
 cat(nrow(occ_raw)-nrow(occ_clean), "records are removed")
 ```
 
@@ -283,7 +290,7 @@ cat(nrow(occ_clean)-nrow(occ_unique), "records are removed")
 ```
 
 ```r
-# only keep specimen
+# only keep record that are associted with a specimen
 table(occ_unique$basisOfRecord)
 ```
 
@@ -309,14 +316,40 @@ table(occ_unique$basisOfRecord)
 ```
 
 ```r
-# limit species by year
-#table(occ_unique$year)
+# to filter the species records by year, in this example 1950 to present:
+# shows frequency of records based on year
+table(occ_unique$year)
+```
+
+```
+## 
+## 1855 1881 1882 1892 1893 1895 1897 1903 1904 1905 1906 1909 1911 1912 1913 
+##    1    1    1    2    1    2    1    1    1    3    1    2    2    1    2 
+## 1914 1922 1923 1924 1925 1926 1927 1928 1929 1930 1931 1932 1933 1934 1935 
+##    2    6    1    2    1    8    3    1    2    3    2    2    2    3    1 
+## 1936 1937 1938 1939 1940 1941 1942 1943 1944 1945 1946 1947 1948 1949 1950 
+##    4    2    3    3    3    4    6    2    4    3    8    8    6   18   10 
+## 1951 1952 1953 1954 1955 1956 1957 1958 1959 1960 1961 1962 1963 1964 1965 
+##    4    3    6    4    9    8   10    5    7    9   18   21   17   11   10 
+## 1966 1967 1968 1969 1970 1971 1972 1973 1974 1975 1976 1977 1978 1979 1980 
+##   20   26   21   11    9    6   17   14   10    4   17    6   11    9   12 
+## 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 
+##    3   10    6   17   15   29   16    7   10   17   16   10    7   11    7 
+## 1996 1997 1998 1999 2000 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 
+##   23    3   11   21   13    5    3    2    4    1    8    7    9    6    3 
+## 2011 2012 2013 2014 2015 
+##    1    5    2    3    5
+```
+
+```r
+# show histogram of records based on year
 hist(occ_unique$year)
 ```
 
 ![](Appendix1_case_study_files/figure-html/clean_data1-1.png)<!-- -->
 
 ```r
+# subset the record that have a collection date of 1950 to present
 occ_unique <- subset(occ_unique, year>=1950)
 ```
 
@@ -328,11 +361,14 @@ Up to this point we have been working with a data frame, but it has no spatial r
 # make occ spatial
 coordinates(occ_unique) <- ~ lon + lat
 
-# add CRS projection.
-
+# Define the coordinate system that will be used. Here we show several examples:
 myCRS1 <- CRS("+init=epsg:4326") # WGS 84
 #myCRS2 <- CRS("+init=epsg:4269") # NAD 83
 #myCRS3 <- CRS("+init=epsg:3857") # Mercator
+
+# full reference list can be found here http://spatialreference.org/ref/
+
+# add Coordinate Reference System (CRS) projection. 
 crs(occ_unique) <- myCRS1
 plot(occ_unique)
 ```
@@ -340,11 +376,12 @@ plot(occ_unique)
 ![](Appendix1_case_study_files/figure-html/clean_data2-1.png)<!-- -->
 
 ```r
-# full reference list can be found here http://spatialreference.org/ref/
-
 ## look for erroneous points
-plot(clim[[1]]) # to the first layer of the bioclim layers as a reference
-plot(occ_unique,add=TRUE) # plot the oc_unique on the above raster layer
+# Here we add the first layer of the bioclim variables as a reference 
+plot(clim[[1]])
+
+# We then plot the occurence data to see if any occurence locations fall within inapproprite areas (i.e terrestrial species in the ocean)
+plot(occ_unique,add=TRUE)
 ```
 
 ![](Appendix1_case_study_files/figure-html/clean_data2-2.png)<!-- -->
@@ -437,8 +474,7 @@ plot(US_shp)
 ![](Appendix1_case_study_files/figure-html/clean_data3-1.png)<!-- -->
 
 ```r
-# this will lead to error, because of different CRS 
-# over(x = occ_unique,y = US_shp) 
+# Before we can select points in the US, we must get both data set in the same coordinate system (i.e Occurence records and US polygon layer) otherwise, R will display an error
 crs(US_shp)
 ```
 
@@ -459,6 +495,9 @@ crs(occ_unique)
 
 ```r
 US_shp_prj <- spTransform(US_shp,crs(occ_unique))
+
+# This checks if there is overlap between the occurrence reocrds and the polygon:
+# over(x = occ_unique,y = US_shp)
 over_results <- over(occ_unique,US_shp_prj)
 in_us <- subset(occ_unique, !is.na(over_results$FIPS_CNTRY))
 out_us <- subset(occ_unique, is.na(over_results$FIPS_CNTRY))
@@ -495,12 +534,14 @@ cat(nrow(occ_unique)-nrow(occ_final), "records are removed")
 plot(clim[[1]]) 
 
 # plot the final occurrence data on the environmental layer
-plot(occ_final,add=T,col="red") # the 'add=T' tells R to put the incoming data on the existing layer
+plot(occ_final,add=T,col="red") 
 ```
 
 ![](Appendix1_case_study_files/figure-html/clean_data4-1.png)<!-- -->
 
 ```r
+# the 'add=T' tells R to put the incoming data on the existing layer
+
 # export as shapefile
 shapefile(occ_final,filename="data/occ_final.shp",overwrite=TRUE)
 ```
@@ -516,14 +557,15 @@ shapefile(occ_final,filename="data/occ_final.shp",overwrite=TRUE)
 ```
 
 ```r
-# load a shapefile
+# If you want to load the shapefile back into R use:
 # occ_final <- shapefile(filename="data/occ_final.shp")
 ```
 
 ###2.3 Set up study area
+
 We create a buffer around our occurrence locations and define this as our study region, which will allow us to avoid sampling from a broad background. We establish a four-decimal-degree buffer around the occurrence points. To make sure that our buffer encompasses the appropriate area, we plot the occurrence points, the first environmental layer, and the buffer polygon.
 
-#####Thread 11: build a buffer of occ
+#####Thread 11: build a buffer for occurrence records
 
 ```r
 # this creates a 4-decimal-degree buffer around the occurrence data 
@@ -538,7 +580,7 @@ plot(occ_buff,add=T,col="blue") # adds buffer polygon to the plot
 
 ![](Appendix1_case_study_files/figure-html/set_up_study_area1-1.png)<!-- -->
 
-With a defined study area and the environmental layers stacked, we then clip the layers to the extent of our study area. However, for ease of processing, we do this in two steps rather than one. First, we create a coarse rectangular shaped study area around the study area to reduce the size of environmental data and then extract by *mask* using the buffer we create to more accurately clip environmental layers. This approach could be faster than directly masking. We save the cropped environmental layers as .asc (ascii files) as inputs for Maxent.
+With a defined study area and the environmental layers stacked, we then clip the layers to the extent of our study area. However, for ease of processing, we do this in two steps rather than one. First, we create a coarse rectangular shaped study area around the study extent to reduce the size of environmental data and then extract by *mask* using the buffer we create to more accurately clip environmental layers. This approach could be faster than directly masking. We save the cropped environmental layers as .asc (ascii files) as inputs for Maxent.
 
 #####Thread 12: crop raster by polygon (shapefile); export a group of raster layers
 
@@ -561,11 +603,12 @@ writeRaster(studyArea,
 
 In the next step, we selected 10,000 random background points from the study area. To make our experiment reproducible (i.e., select the same set of points), we used a static seed via *set.seed(1)* function. Then, we plotted the background points together with the study area and occurrence data.
 
-#####Thread 13: manually select random bg points
+#####Thread 13: manually select random background points
 
 ```r
-# select background points from this buffered area; when the number provided 
-# to set.seed() function, the same random sample will be selected in the next line			
+# select background points from the new buffered study area; the number provided in the 
+# set.seed() function determines the random sample, usinmg the same number will produce the same random sample		
+
 # use this code before the sampleRandom function every time, if you want to get
 # the same "random samples"
 set.seed(1) 
@@ -584,9 +627,10 @@ plot(occ_final,add=T,col="red")
 ![](Appendix1_case_study_files/figure-html/set_up_study_area3-1.png)<!-- -->
 
 ###2.4 Split occurrence data into training & testing
-We randomly selected 50% of the occurrence data for model training and used the remaining for model testing. To make our experiment reproducible (i.e., select the same set of points), we used a static seed via *set.seed(1)* function.
 
-#####Thread 14: random cut, block/spatial cut
+We randomly selected 50% of the occurrence data for model training and used the remaining for model testing. To make our experiment reproducible (i.e., select the same set of points), we used a static seed via the *set.seed(1)* function.
+
+#####Thread 14: random seperation of training and testing data, block/spatial cut
 
 ```r
 # get the same random sample for training and testing
@@ -604,498 +648,20 @@ plot(occ_test,col="red",add=T)
 ![](Appendix1_case_study_files/figure-html/cut_occ_into_training_testing-1.png)<!-- -->
 
 ```r
-### add another method, block cut
+### an alternative method, block cut, distributes the training and testing more equally across the study exent. This function is part of the ENMeval library
 #library(ENMeval)
 cut_block <- ENMeval::get.block(occ=as.data.frame(occ_final@coords), 
                        bg.coords=as.data.frame(bg@coords))
 occ_final@data$cut_block <- cut_block$occ.grp
 bg@data$cut_block <- cut_block$bg.grp
 
-head(occ_final)
-```
+#head(occ_final)
 
-```
-##      acceptedNameUsage
-## 1413              <NA>
-## 1614              <NA>
-## 1701              <NA>
-## 1716              <NA>
-## 1819              <NA>
-## 1958              <NA>
-##                                                                                                                           accessRights
-## 1413 Open Access, http://creativecommons.org/publicdomain/zero/1.0/; see Yale Peabody policies at: http://hdl.handle.net/10079/8931zqj
-## 1614                                                                                                                              <NA>
-## 1701                                                                                                                              <NA>
-## 1716                                                                                                                              <NA>
-## 1819                                                                                           http://vertnet.org/resources/norms.html
-## 1958                                                                                           http://vertnet.org/resources/norms.html
-##          adm1         adm2 associatedReferences      basisOfRecord
-## 1413    Texas  Leon County                 <NA> PRESERVED_SPECIMEN
-## 1614   Tolima     Planadas                 <NA> PRESERVED_SPECIMEN
-## 1701   Tolima    Chaparral                 <NA> PRESERVED_SPECIMEN
-## 1716   Tolima    Chaparral                 <NA> PRESERVED_SPECIMEN
-## 1819 Oklahoma Noble County                 <NA> PRESERVED_SPECIMEN
-## 1958 Missouri      Hickory                 <NA> PRESERVED_SPECIMEN
-##      behavior                           bibliographicCitation
-## 1413     <NA> Dasypus novemcinctus mexicanus (YPM MAM 015982)
-## 1614     <NA>                                            <NA>
-## 1701     <NA>                                            <NA>
-## 1716     <NA>                                            <NA>
-## 1819     <NA>                                            <NA>
-## 1958     <NA>                                            <NA>
-##       catalogNumber    class classKey
-## 1413 YPM MAM 015982 Mammalia      359
-## 1614     CZUT-M1764 Mammalia      359
-## 1701     CZUT-M1766 Mammalia      359
-## 1716     CZUT-M1770 Mammalia      359
-## 1819          37172 Mammalia      359
-## 1958         693990 Mammalia      359
-##                                                                                          cloc
-## 1413                             Dunn Ranch, Texas, Leon County, United States, NORTH_AMERICA
-## 1614                             Vereda San Miguel, Tolima, Planadas, Colombia, SOUTH_AMERICA
-## 1701                         Vereda Vega Chiquita, Tolima, Chaparral, Colombia, SOUTH_AMERICA
-## 1716                           Vereda La Virginia, Tolima, Chaparral, Colombia, SOUTH_AMERICA
-## 1819 0.6 mi S Perry exit, Interstate 35, Oklahoma, Noble County, United States, NORTH_AMERICA
-## 1958       Route 6, near Jones Spring, Avery, Missouri, Hickory, United States, NORTH_AMERICA
-##        collectionCode                    collectionID     continent
-## 1413               VZ                            <NA> NORTH_AMERICA
-## 1614             <NA>                            <NA> SOUTH_AMERICA
-## 1701             <NA>                            <NA> SOUTH_AMERICA
-## 1716             <NA>                            <NA> SOUTH_AMERICA
-## 1819 Mammal specimens http://grbio.org/cool/74zs-fm7j NORTH_AMERICA
-## 1958      ISM-Mammals                            <NA> NORTH_AMERICA
-##      coordinatePrecision coordinateUncertaintyInMeters       country
-## 1413                  NA                            NA United States
-## 1614                  NA                           505      Colombia
-## 1701                  NA                           505      Colombia
-## 1716                  NA                           505      Colombia
-## 1819                  NA                            20 United States
-## 1958                  NA                            NA United States
-##      crawlId datasetID                           datasetKey datasetName
-## 1413    1454      <NA> 854f602e-f762-11e1-a439-00145eb45e9a        <NA>
-## 1614      15      <NA> 87c22676-55df-4e72-b2fa-6488700576d1        <NA>
-## 1701      15      <NA> 87c22676-55df-4e72-b2fa-6488700576d1        <NA>
-## 1716      15      <NA> 87c22676-55df-4e72-b2fa-6488700576d1        <NA>
-## 1819      28      <NA> 06a00852-f764-4fb8-80d4-ca51f0918459        <NA>
-## 1958      38      <NA> 07e9980a-a9f6-4a35-9df6-26371459e570        <NA>
-##                    dateIdentified day depth depthAccuracy disposition
-## 1413                         <NA>   7    NA            NA        <NA>
-## 1614                         <NA>  13    NA            NA        <NA>
-## 1701                         <NA>  13    NA            NA        <NA>
-## 1716                         <NA>  19    NA            NA        <NA>
-## 1819 2016-10-24T00:00:00.000+0000  10    NA            NA        <NA>
-## 1958                         <NA>  NA    NA            NA        <NA>
-##                                dynamicProperties earliestAgeOrLowestStage
-## 1413 { "solr_long_lat": "-95.826584,31.230124" }                     <NA>
-## 1614                                        <NA>                     <NA>
-## 1701                                        <NA>                     <NA>
-## 1716                                        <NA>                     <NA>
-## 1819                                        <NA>                     <NA>
-## 1958                                        <NA>                     <NA>
-##      earliestEonOrLowestEonothem earliestEpochOrLowestSeries
-## 1413                        <NA>                        <NA>
-## 1614                        <NA>                        <NA>
-## 1701                        <NA>                        <NA>
-## 1716                        <NA>                        <NA>
-## 1819                        <NA>                        <NA>
-## 1958                        <NA>                        <NA>
-##      earliestEraOrLowestErathem earliestPeriodOrLowestSystem elevation
-## 1413                       <NA>                         <NA>        NA
-## 1614                       <NA>                         <NA>   1827.00
-## 1701                       <NA>                         <NA>   1189.00
-## 1716                       <NA>                         <NA>   1727.00
-## 1819                       <NA>                         <NA>    325.83
-## 1958                       <NA>                         <NA>        NA
-##      elevationAccuracy endDayOfYear establishmentMeans
-## 1413                NA         <NA>               <NA>
-## 1614                 0         <NA>               <NA>
-## 1701                 0         <NA>               <NA>
-## 1716                 0         <NA>               <NA>
-## 1819                 0          161               <NA>
-## 1958                NA         <NA>             NATIVE
-##                         eventDate eventID
-## 1413 2015-01-07T00:00:00.000+0000    <NA>
-## 1614 2015-09-13T00:00:00.000+0000    <NA>
-## 1701 2015-11-13T00:00:00.000+0000    <NA>
-## 1716 2015-11-19T00:00:00.000+0000    <NA>
-## 1819 2014-06-10T00:00:00.000+0000    <NA>
-## 1958 2014-01-01T00:00:00.000+0000    <NA>
-##                                                    eventRemarks eventTime
-## 1413                                                       <NA>      <NA>
-## 1614                                                       <NA>      <NA>
-## 1701                                                       <NA>      <NA>
-## 1716                                                       <NA>      <NA>
-## 1819 OCCURRENCEREMARKS: wild caught; ESTABLISHMENTMEANS: native      <NA>
-## 1958                                                       <NA>      <NA>
-##           family familyKey fieldNotes fieldNumber formation   fullCountry
-## 1413 Dasypodidae      9369       <NA>        0585      <NA> United States
-## 1614 Dasypodidae      9369       <NA>        <NA>      <NA>      Colombia
-## 1701 Dasypodidae      9369       <NA>        <NA>      <NA>      Colombia
-## 1716 Dasypodidae      9369       <NA>        <NA>      <NA>      Colombia
-## 1819 Dasypodidae      9369       <NA>        <NA>      <NA> United States
-## 1958 Dasypodidae      9369       <NA>        <NA>      <NA> United States
-##          gbifID genericName   genus genusKey geodeticDatum
-## 1413 1099834716     Dasypus Dasypus  2440775         WGS84
-## 1614 1571717883     Dasypus Dasypus  2440775         WGS84
-## 1701 1571717875     Dasypus Dasypus  2440775         WGS84
-## 1716 1571717891     Dasypus Dasypus  2440775         WGS84
-## 1819 1656058026     Dasypus Dasypus  2440775         WGS84
-## 1958 1230275499     Dasypus Dasypus  2440775         WGS84
-##      geologicalContextID  georeferencedBy     georeferencedDate
-## 1413                <NA>             <NA>                  <NA>
-## 1614                <NA> Ricardo Ortíz G.            2017-04-26
-## 1701                <NA> Ricardo Ortíz G.            2017-04-26
-## 1716                <NA> Ricardo Ortíz G.            2017-04-26
-## 1819                <NA>          unknown 2016-10-24 00:00:00.0
-## 1958                <NA>             <NA>                  <NA>
-##                                                                                                                                                                                                                                                                                                                                                                     georeferenceProtocol
-## 1413                                                                                                                                                                                                                                                                                                                                                                    digital resource
-## 1614 Escobar D, Jojoa LM, Díaz SR, Rudas E, Albarracín RD, Ramírez C, Gómez JY, López CR, Saavedra J, Ortiz R, (2016). Georreferenciación de localidades: Una guía de referencia para colecciones biológicas. Instituto de Investigación de Recursos Biológicos Alexander von Humboldt – Instituto de Ciencias Naturales, Universidad Nacional de Colombia. Bogotá D.C., Colombia. 144 p
-## 1701 Escobar D, Jojoa LM, Díaz SR, Rudas E, Albarracín RD, Ramírez C, Gómez JY, López CR, Saavedra J, Ortiz R, (2016). Georreferenciación de localidades: Una guía de referencia para colecciones biológicas. Instituto de Investigación de Recursos Biológicos Alexander von Humboldt – Instituto de Ciencias Naturales, Universidad Nacional de Colombia. Bogotá D.C., Colombia. 144 p
-## 1716 Escobar D, Jojoa LM, Díaz SR, Rudas E, Albarracín RD, Ramírez C, Gómez JY, López CR, Saavedra J, Ortiz R, (2016). Georreferenciación de localidades: Una guía de referencia para colecciones biológicas. Instituto de Investigación de Recursos Biológicos Alexander von Humboldt – Instituto de Ciencias Naturales, Universidad Nacional de Colombia. Bogotá D.C., Colombia. 144 p
-## 1819                                                                                                                                                                                                                                                                                                                                                                        not recorded
-## 1958                                                                                                                                                                                                                                                                                                                                                                                <NA>
-##                                                                                                                       georeferenceRemarks
-## 1413                                                                                                                                 <NA>
-## 1614 Nivel 1. Se valida la coordenada original, coincide con la vereda San Miguel. Incertidumbre por datum y precisión de las coordenadas
-## 1701                                    Nivel 1. Se valida la coordenada original. Incertidumbre por datum y precisión de las coordenadas
-## 1716                                    Nivel 1. Se valida la coordenada original. Incertidumbre por datum y precisión de las coordenadas
-## 1819                                                                                                                                 <NA>
-## 1958                                                                                                                                 <NA>
-##                                                                                                                                                                                                                                                                                                                                                                                                                                                           georeferenceSources
-## 1413                                                                                                                                                                                                                                                                                                                                                                                                                                                             Google Earth
-## 1614 Instituto Geográfico Agustín Codazzi - IGAC. Base cartográfica oficial integrada. Plancha 322. Escala 1:100.000. Codificación de la división político administrativa de Colombia(Divipola) - DANE. NASA Land Processes Distributed Active Archive Center (LP DAAC). ASTER Global DEM. EOSDIS/Reverb ECHO. https://reverb.echo.nasa.gov. 2011. Red Nacional de Información RNI, veredas de Colombia, 2016. GeoNames geographical database, http://www.geonames.org/, 2016
-## 1701 Instituto Geográfico Agustín Codazzi - IGAC. Base cartográfica oficial integrada. Plancha 281. Escala 1:100.000. Codificación de la división político administrativa de Colombia(Divipola) - DANE. NASA Land Processes Distributed Active Archive Center (LP DAAC). ASTER Global DEM. EOSDIS/Reverb ECHO. https://reverb.echo.nasa.gov. 2011. Red Nacional de Información RNI, veredas de Colombia, 2016. GeoNames geographical database, http://www.geonames.org/, 2016
-## 1716 Instituto Geográfico Agustín Codazzi - IGAC. Base cartográfica oficial integrada. Plancha 281. Escala 1:100.000. Codificación de la división político administrativa de Colombia(Divipola) - DANE. NASA Land Processes Distributed Active Archive Center (LP DAAC). ASTER Global DEM. EOSDIS/Reverb ECHO. https://reverb.echo.nasa.gov. 2011. Red Nacional de Información RNI, veredas de Colombia, 2016. GeoNames geographical database, http://www.geonames.org/, 2016
-## 1819                                                                                                                                                                                                                                                                                                                                                                                                                                                             not recorded
-## 1958                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <NA>
-##      georeferenceVerificationStatus habitat
-## 1413                           <NA>    <NA>
-## 1614                           <NA>    <NA>
-## 1701                           <NA>    <NA>
-## 1716                           <NA>    <NA>
-## 1819                     unverified    <NA>
-## 1958          requires verification    <NA>
-##                                                                                                                                     higherClassification
-## 1413 Animalia; Chordata; Vertebrata; Amniota; Mammalia; Theriiformes-----Theria-Placentalia-Xenarthra; Cingulata; Dasypodoidea; Dasypodidae; Dasypodinae
-## 1614                                                                                                                                                <NA>
-## 1701                                                                                                                                                <NA>
-## 1716                                                                                                                                                <NA>
-## 1819                                                                                               Animalia; Chordata; Mammalia; Cingulata; Dasypodidae;
-## 1958                                                                                  Animalia | Chordata | Mammalia | Cingulata | Dasypodidae | Dasypus
-##                                                           higherGeography
-## 1413                  North America; USA; Texas; Leon County; Centerville
-## 1614                                                                 <NA>
-## 1701                                                                 <NA>
-## 1716                                                                 <NA>
-## 1819                 North America, United States, Oklahoma, Noble County
-## 1958 North America | United States | Missouri | Hickory County |  |  |  |
-##      higherGeographyID highestBiostratigraphicZone
-## 1413              <NA>                        <NA>
-## 1614              <NA>                        <NA>
-## 1701              <NA>                        <NA>
-## 1716              <NA>                        <NA>
-## 1819              <NA>                        <NA>
-## 1958              <NA>                        <NA>
-##      http://unknown.org/classs http://unknown.org/occurrenceDetails
-## 1413                      <NA>                                 <NA>
-## 1614                      <NA>                                 <NA>
-## 1701                      <NA>                                 <NA>
-## 1716                      <NA>                                 <NA>
-## 1819                      <NA>                                 <NA>
-## 1958                      <NA>                                 <NA>
-##      identificationID identificationQualifier identificationReferences
-## 1413             <NA>                    <NA>                     <NA>
-## 1614             <NA>                    <NA>                     <NA>
-## 1701             <NA>                    <NA>                     <NA>
-## 1716             <NA>                    <NA>                     <NA>
-## 1819             <NA>                       A                     <NA>
-## 1958             <NA>                    <NA>                     <NA>
-##      identificationRemarks identificationVerificationStatus identifiedBy
-## 1413                  <NA>                             <NA>         <NA>
-## 1614                  <NA>                             <NA>  L V. García
-## 1701                  <NA>                             <NA>     C Guzman
-## 1716                  <NA>                             <NA>     C Guzman
-## 1819                  <NA>                           legacy      unknown
-## 1958                  <NA>                             <NA>         <NA>
-##                                                           identifier
-## 1413                   urn:uuid:875b3731-d110-4008-bbc3-a21e237e14ce
-## 1614                                              UT:CZUT:CZUT-M1764
-## 1701                                              UT:CZUT:CZUT-M1766
-## 1716                                              UT:CZUT:CZUT-M1770
-## 1819 http://arctos.database.museum/guid/UMNH:Mamm:37172?seid=3325000
-## 1958                            8b22d40e-7ba4-4d9a-824c-05da299b208e
-##      individualCount informationWithheld infraspecificEpithet
-## 1413               1                <NA>            mexicanus
-## 1614              NA                <NA>                 <NA>
-## 1701              NA                <NA>                 <NA>
-## 1716              NA                <NA>                 <NA>
-## 1819               1                <NA>            mexicanus
-## 1958              NA                <NA>                 <NA>
-##      institutionCode                                   institutionID
-## 1413             YPM                                            <NA>
-## 1614              UT                                            <NA>
-## 1701              UT                                            <NA>
-## 1716              UT                                            <NA>
-## 1819            UMNH http://biocol.org/urn:lsid:biocol.org:col:34862
-## 1958             ISM http://biocol.org/urn:lsid:biocol.org:col:35004
-##      island islandGroup ISO2        key  kingdom kingdomKey language
-## 1413   <NA>        <NA>   US 1099834716 Animalia          1       en
-## 1614   <NA>        <NA>   CO 1571717883 Animalia          1     <NA>
-## 1701   <NA>        <NA>   CO 1571717875 Animalia          1     <NA>
-## 1716   <NA>        <NA>   CO 1571717891 Animalia          1     <NA>
-## 1819   <NA>        <NA>   US 1656058026 Animalia          1       en
-## 1958   <NA>        <NA>   US 1230275499 Animalia          1       en
-##                       lastCrawled              lastInterpreted
-## 1413 2018-04-23T00:12:16.264+0000 2018-02-03T17:00:27.697+0000
-## 1614 2017-11-28T21:02:14.179+0000 2018-02-04T00:48:03.163+0000
-## 1701 2017-11-28T21:02:14.179+0000 2018-02-04T00:47:59.235+0000
-## 1716 2017-11-28T21:02:14.180+0000 2018-02-04T00:47:58.556+0000
-## 1819 2018-05-08T16:58:18.293+0000 2018-02-02T21:18:55.693+0000
-## 1958 2017-09-30T14:21:10.054+0000 2018-02-03T21:43:14.977+0000
-##                        lastParsed latestEonOrHighestEonothem
-## 1413 2017-11-09T20:27:54.444+0000                       <NA>
-## 1614 2017-11-28T21:02:14.217+0000                       <NA>
-## 1701 2017-11-28T21:02:14.209+0000                       <NA>
-## 1716 2017-11-28T21:02:14.199+0000                       <NA>
-## 1819 2018-01-09T07:00:05.661+0000                       <NA>
-## 1958 2016-12-23T03:21:14.148+0000                       <NA>
-##      latestEpochOrHighestSeries latestEraOrHighestErathem
-## 1413                       <NA>                      <NA>
-## 1614                       <NA>                      <NA>
-## 1701                       <NA>                      <NA>
-## 1716                       <NA>                      <NA>
-## 1819                       <NA>                      <NA>
-## 1958                       <NA>                      <NA>
-##      latestPeriodOrHighestSystem
-## 1413                        <NA>
-## 1614                        <NA>
-## 1701                        <NA>
-## 1716                        <NA>
-## 1819                        <NA>
-## 1958                        <NA>
-##                                                         license lifeStage
-## 1413 http://creativecommons.org/publicdomain/zero/1.0/legalcode      <NA>
-## 1614       http://creativecommons.org/licenses/by/4.0/legalcode      <NA>
-## 1701       http://creativecommons.org/licenses/by/4.0/legalcode      <NA>
-## 1716       http://creativecommons.org/licenses/by/4.0/legalcode      <NA>
-## 1819 http://creativecommons.org/publicdomain/zero/1.0/legalcode      <NA>
-## 1958 http://creativecommons.org/publicdomain/zero/1.0/legalcode      <NA>
-##      lithostratigraphicTerms                           locality
-## 1413                    <NA>                         Dunn Ranch
-## 1614                    <NA>                  Vereda San Miguel
-## 1701                    <NA>               Vereda Vega Chiquita
-## 1716                    <NA>                 Vereda La Virginia
-## 1819                    <NA> 0.6 mi S Perry exit, Interstate 35
-## 1958                    <NA>  Route 6, near Jones Spring, Avery
-##      locationAccordingTo locationID         locationRemarks
-## 1413                <NA>       <NA>                    <NA>
-## 1614                <NA>       <NA>                    <NA>
-## 1701                <NA>       <NA>                    <NA>
-## 1716                <NA>       <NA>                    <NA>
-## 1819             unknown       <NA> VERBATIMELEVATION: 1069
-## 1958                <NA>       <NA>                    <NA>
-##      lowestBiostratigraphicZone member                     modified month
-## 1413                       <NA>   <NA>                         <NA>     1
-## 1614                       <NA>   <NA>                         <NA>     9
-## 1701                       <NA>   <NA>                         <NA>    11
-## 1716                       <NA>   <NA>                         <NA>    11
-## 1819                       <NA>   <NA> 2017-11-01T14:44:32.000+0000     6
-## 1958                       <NA>   <NA> 2014-08-25T11:37:37.000+0000    NA
-##      municipality nameAccordingTo namePublishedIn namePublishedInYear
-## 1413  Centerville            <NA>            <NA>                <NA>
-## 1614         <NA>            <NA>            <NA>                <NA>
-## 1701         <NA>            <NA>            <NA>                <NA>
-## 1716         <NA>            <NA>            <NA>                <NA>
-## 1819         <NA>            <NA>            <NA>                <NA>
-## 1958         <NA>            <NA>            <NA>                <NA>
-##      nomenclaturalCode
-## 1413              ICZN
-## 1614              <NA>
-## 1701              <NA>
-## 1716              <NA>
-## 1819              ICZN
-## 1958              ICZN
-##                                                         occurrenceID
-## 1413                   urn:uuid:875b3731-d110-4008-bbc3-a21e237e14ce
-## 1614                                              UT:CZUT:CZUT-M1764
-## 1701                                              UT:CZUT:CZUT-M1766
-## 1716                                              UT:CZUT:CZUT-M1770
-## 1819 http://arctos.database.museum/guid/UMNH:Mamm:37172?seid=3325000
-## 1958                            8b22d40e-7ba4-4d9a-824c-05da299b208e
-##                                                                         occurrenceRemarks
-## 1413 MAM number 15982; female female; presonal specimen number DC 20; pregnant, 5 fetuses
-## 1614                                                                                 <NA>
-## 1701                                                                                 <NA>
-## 1716                                                                                 <NA>
-## 1819                                                                                 <NA>
-## 1958                                                                                 <NA>
-##      occurrenceStatus     order orderKey
-## 1413             <NA> Cingulata      735
-## 1614             <NA> Cingulata      735
-## 1701             <NA> Cingulata      735
-## 1716             <NA> Cingulata      735
-## 1819             <NA> Cingulata      735
-## 1958          present Cingulata      735
-##                                              organismID organismQuantity
-## 1413                                               <NA>             <NA>
-## 1614                                               <NA>             <NA>
-## 1701                                               <NA>             <NA>
-## 1716                                               <NA>             <NA>
-## 1819 http://arctos.database.museum/guid/UMNH:Mamm:37172             <NA>
-## 1958                                               <NA>             <NA>
-##      organismQuantityType organismRemarks originalNameUsage
-## 1413                 <NA>            <NA>              <NA>
-## 1614                 <NA>            <NA>              <NA>
-## 1701                 <NA>            <NA>              <NA>
-## 1716                 <NA>            <NA>              <NA>
-## 1819                 <NA>            <NA>              <NA>
-## 1958                 <NA>            <NA>              <NA>
-##            otherCatalogNumbers ownerInstitutionCode parentEventID
-## 1413                      <NA>                  YPM          <NA>
-## 1614                      <NA>                 <NA>          <NA>
-## 1701                      <NA>                 <NA>          <NA>
-## 1716                      <NA>                 <NA>          <NA>
-## 1819 collector number=EAR 8842                 <NA>          <NA>
-## 1958                      <NA>                 <NA>          <NA>
-##      parentNameUsage   phylum phylumKey
-## 1413            <NA> Chordata        44
-## 1614            <NA> Chordata        44
-## 1701            <NA> Chordata        44
-## 1716            <NA> Chordata        44
-## 1819            <NA> Chordata        44
-## 1958            <NA> Chordata        44
-##                              preparations
-## 1413 skeleton (skull only); tissue frozen
-## 1614                                 <NA>
-## 1701                                 <NA>
-## 1716                                 <NA>
-## 1819    skin; skull; muscle (95% ethanol)
-## 1958                 partial skeleton - 1
-##                                                                                      previousIdentifications
-## 1413                                                                          Dasypus novemcinctus mexicanus
-## 1614                                                                                    Dasypus novemcinctus
-## 1701                                                                                    Dasypus novemcinctus
-## 1716                                                                                    Dasypus novemcinctus
-## 1819 <i>Dasypus novemcinctus mexicanus</i> (accepted ID) identified by unknown on 2016-10-24; method: legacy
-## 1958                                                                                                    <NA>
-##         protocol publishingCountry                     publishingOrgKey
-## 1413 DWC_ARCHIVE                US 2e167bb0-4441-11db-9ba2-b8a03c50a862
-## 1614 DWC_ARCHIVE                CO 5a45153b-bdf9-44ae-b7a7-e3261896540b
-## 1701 DWC_ARCHIVE                CO 5a45153b-bdf9-44ae-b7a7-e3261896540b
-## 1716 DWC_ARCHIVE                CO 5a45153b-bdf9-44ae-b7a7-e3261896540b
-## 1819 DWC_ARCHIVE                US 2d6267a0-0561-11d8-b851-b8a03c50a862
-## 1958 DWC_ARCHIVE                US b0e368b3-da4b-45ff-8d24-12ffd422bc38
-##                                                       recordedBy
-## 1413 Gunter P. Wagner, Wess Dunn, Kendell Dunn, Mihaela Pavlicev
-## 1614                                                 L V. García
-## 1701                                                    C Guzman
-## 1716                                                    C Guzman
-## 1819                               Collector(s): Eric A. Rickart
-## 1958                                                Widga, Henry
-##      recordNumber
-## 1413         <NA>
-## 1614         <NA>
-## 1701         <NA>
-## 1716         <NA>
-## 1819     EAR 8842
-## 1958         <NA>
-##                                                            references
-## 1413 http://collections.peabody.yale.edu/search/Record/YPM-MAM-015982
-## 1614                                                             <NA>
-## 1701                                                             <NA>
-## 1716                                                             <NA>
-## 1819               http://arctos.database.museum/guid/UMNH:Mamm:37172
-## 1958            http://portal.vertnet.org/o/ism/ism-mammals?id=693990
-##      reproductiveCondition rights                           rightsHolder
-## 1413   pregnant, 5 fetuses   <NA> Yale Peabody Museum of Natural History
-## 1614                  <NA>   <NA>                                   <NA>
-## 1701                  <NA>   <NA>                                   <NA>
-## 1716                  <NA>   <NA>                                   <NA>
-## 1819                  <NA>   <NA>                                   <NA>
-## 1958                  <NA>   <NA>                                   <NA>
-##      samplingEffort samplingProtocol
-## 1413           <NA>             <NA>
-## 1614           <NA>     Huellla Yeso
-## 1701           <NA>     Huellla Yeso
-## 1716           <NA>     Huellla Yeso
-## 1819           <NA>             <NA>
-## 1958           <NA>             <NA>
-##                                   scientificName scientificNameID  sex
-## 1413 Dasypus novemcinctus mexicanus Peters, 1864             <NA> <NA>
-## 1614         Dasypus novemcinctus Linnaeus, 1758             <NA> <NA>
-## 1701         Dasypus novemcinctus Linnaeus, 1758             <NA> <NA>
-## 1716         Dasypus novemcinctus Linnaeus, 1758             <NA> <NA>
-## 1819 Dasypus novemcinctus mexicanus Peters, 1864             <NA> <NA>
-## 1958         Dasypus novemcinctus Linnaeus, 1758             <NA> <NA>
-##                   species speciesKey specificEpithet startDayOfYear
-## 1413 Dasypus novemcinctus    2440779    novemcinctus           <NA>
-## 1614 Dasypus novemcinctus    2440779    novemcinctus           <NA>
-## 1701 Dasypus novemcinctus    2440779    novemcinctus           <NA>
-## 1716 Dasypus novemcinctus    2440779    novemcinctus           <NA>
-## 1819 Dasypus novemcinctus    2440779    novemcinctus           <NA>
-## 1958 Dasypus novemcinctus    2440779    novemcinctus           <NA>
-##      taxonConceptID taxonID taxonKey taxonomicStatus  taxonRank
-## 1413           <NA>    <NA>  6163121            <NA> SUBSPECIES
-## 1614           <NA>    <NA>  2440779        accepted    SPECIES
-## 1701           <NA>    <NA>  2440779        accepted    SPECIES
-## 1716           <NA>    <NA>  2440779        accepted    SPECIES
-## 1819           <NA>    <NA>  6163121            <NA> SUBSPECIES
-## 1958           <NA>    <NA>  2440779            <NA>    SPECIES
-##                                   taxonRemarks           type typeStatus
-## 1413 Animals and Plants: Vertebrates - Mammals PhysicalObject       <NA>
-## 1614                                      <NA>  Objeto físico       <NA>
-## 1701                                      <NA>  Objeto físico       <NA>
-## 1716                                      <NA>  Objeto físico       <NA>
-## 1819                                      <NA> PhysicalObject       <NA>
-## 1958                                      <NA> PhysicalObject       <NA>
-##      typifiedName verbatimCoordinateSystem verbatimElevation
-## 1413         <NA>                     <NA>              <NA>
-## 1614         <NA>                     <NA>              1871
-## 1701         <NA>                     <NA>               950
-## 1716         <NA>                     <NA>              1473
-## 1819         <NA>          decimal degrees              <NA>
-## 1958         <NA>                     <NA>              <NA>
-##      verbatimEventDate
-## 1413              <NA>
-## 1614              <NA>
-## 1701              <NA>
-## 1716              <NA>
-## 1819         6/10/2014
-## 1958     July 22, 2014
-##                                               verbatimLocality verbatimSRS
-## 1413                                                      <NA>        <NA>
-## 1614                                                San Miguel        <NA>
-## 1701                                             Vega chiquita        <NA>
-## 1716                                               La Virginia        <NA>
-## 1819                          United States | Oklahoma | Noble        <NA>
-## 1958 North America | United States | Missouri | Hickory County        <NA>
-##      verbatimTaxonRank
-## 1413              <NA>
-## 1614              <NA>
-## 1701              <NA>
-## 1716              <NA>
-## 1819              <NA>
-## 1958              <NA>
-##                                                                                          vernacularName
-## 1413 Nine-banded Armadillo; long-nosed armadillos; Armadillos; mammals; vertebrates; chordates; animals
-## 1614                                                                                               <NA>
-## 1701                                                                                               <NA>
-## 1716                                                                                               <NA>
-## 1819                                                                                               <NA>
-## 1958                                                                                               <NA>
-##      waterBody year downloadDate cut_block
-## 1413      <NA> 2015   2018-05-15         4
-## 1614      <NA> 2015   2018-05-15         2
-## 1701      <NA> 2015   2018-05-15         2
-## 1716      <NA> 2015   2018-05-15         2
-## 1819      <NA> 2014   2018-05-15         3
-## 1958      <NA> 2014   2018-05-15         4
-```
+# To officially use this method for training and testing data:
 
-```r
 #occ_train <- subset(occ_final,cut_block!=4) # this is the selection to be used for model training
 #occ_test <- subset(occ_final,cut_block==4) # this is the opposite of the selection which will be used for model testing
+
 plot(occ_final)
 plot(subset(occ_final,cut_block==1),col=1,add=T)
 plot(subset(occ_final,cut_block==2),col=2,add=T)
@@ -1105,34 +671,30 @@ plot(subset(occ_final,cut_block==4),col=4,add=T)
 
 ![](Appendix1_case_study_files/figure-html/cut_occ_into_training_testing-2.png)<!-- -->
 
-```r
-#cut_random <- get.checkerboard2(occ=as.data.frame(occ@coords), bg.coords=as.data.frame(bg@coords), aggregation.factor = c(2, 2), env=env)
-#occ_update@data$cut_random <- cut_random$occ.grp
-#bg@data$cut_random <- cut_random$bg.grp
-```
-
 ###2.5 Format data for Maxent
-The data input can either be spatial or tabular. In our example, we use the tabular format, which can be potentially more flexible. We extract environmental conditions for background, training, and testing points in a dataframe format. 
+The data input can either be spatial or tabular. In our example, we will use the tabular format, which can be potentially more flexible. We extract environmental conditions for background, training, and testing points in a dataframe format. 
 
 #####Thread 15
 
 ```r
 # extracting env conditions for training occ from the raster stack;
 # a data frame is returned (i.e multiple columns)
-p <- extract(clim,occ_train) 
+p <- extract(clim,occ_train)
+
 # env conditions for testing occ
-p_test <- extract(clim,occ_test) 
+p_test <- extract(clim,occ_test)
+
 # extracting env conditions for background
 a <- extract(clim,bg)  
 ```
 
-Maxent reads a "1" as presence and "0" as pseudo-absence. Thus, we need to assign a "1" to the training environmental conditions and a "0" for the background. We create a set of rows with the same number as the training and testing data, and put the value of "1" for each cell and a "0" for background. We combine the "1"s and "0"s into a vector that was added to the dataframe containing the environmental conditions associated with the testing and background conditions.
+Maxent reads a "1" as presence and "0" as pseudo-absence (background). Thus, we need to assign a "1" to the training environmental conditions and a "0" for the background. We create a set of rows with the same number as the training and testing data, and put the value of "1" for each cell and a "0" for background. We combine the "1"s and "0"s into a vector that is added to the dataframe containing the environmental conditions associated with the testing and background conditions.
 
 #####Thread 16
 
 ```r
-# repeat the number 1 as many numbers as the number of rows in p, 
-# and repeat 0 as the rows of background points
+# repeat the number 1 as many times as the number of rows in p, 
+# and repeat 0 for the rows of background points
 pa <- c(rep(1,nrow(p)), rep(0,nrow(a))) 
 
 # (rep(1,nrow(p)) creating the number of rows as the p data set to 
@@ -1150,10 +712,10 @@ pder <- as.data.frame(rbind(p,a))
 #####Thread 17
 
 ```r
-# train Maxent with spatial data
+# use the following code to train Maxent with spatial data
 # mod <- maxent(x=clim,p=occ_train)
 
-# train Maxent with tabular data
+# to train Maxent with tabular data
 mod <- dismo::maxent(x=pder, ## env conditions
               p=pa,   ## 1:presence or 0:absence
               path=paste0(getwd(),"/output/maxent_outputs"), ## folder for maxent output; 
@@ -1161,7 +723,7 @@ mod <- dismo::maxent(x=pder, ## env conditions
               # and it gets messy to read those. . .
               args=c("responsecurves") ## parameter specification
               )
-# the maxent functions runs a model in the default settings. To change these parameters,
+# the maxent function runs a model in the default settings. To change these parameters,
 # you have to tell it what you want...i.e. response curves or the type of features
 
 # view the maxent model in a html brower
@@ -1179,12 +741,22 @@ mod
 ```
 
 ###3.2 Predict function
-Running Maxent in R will not automatically make projection to layers, unless you specify this using the parameter *projectionlayers*. However, we could make projections (to dataframes or raster layers) post hoc using the *predict* function.
+Running Maxent in R will not automatically make a projection to the data layers, unless you specify this using the parameter *projectionlayers*. However, we could make projections (to dataframes or raster layers) post hoc using the *predict* function.
 
 #####Thread 18
 
 ```r
 # example 1, project to study area [raster]
+class(studyArea)
+```
+
+```
+## [1] "RasterBrick"
+## attr(,"package")
+## [1] "raster"
+```
+
+```r
 ped1 <- predict(mod,studyArea) # studyArea is the clipped rasters 
 plot(ped1) # plot the continuous prediction
 ```
@@ -1196,7 +768,28 @@ plot(ped1) # plot the continuous prediction
 #ped2 <- predict(mod,clim)
 #plot(ped2)
 
-# example 3, project with training occurrences [dataframes]
+# example 3, project to a dataframe (training occurrences) [dataframes]. This returns the predicion value assocaited with a set of condions. In this example, we use the training condition to extract a prediction for each point.
+head(p)
+```
+
+```
+##      bio1 bio10 bio11 bio12 bio13 bio14 bio15 bio16 bio17 bio18 bio19 bio2
+## [1,]  269   279   256  1023   294     1   111   637     7   364    36  131
+## [2,]  260   268   245  1724   266    33    57   744   118   430   152  108
+## [3,]  191   271   102  1540   170   105    13   438   342   377   428  125
+## [4,]  264   284   240   773   205     2   105   496     9   398    25  129
+## [5,]  206   234   176  2313   316    77    48   940   245   905   245   98
+## [6,]  189   274    97   825   114    43    33   276   147   195   147  131
+##      bio3 bio4 bio5 bio6 bio7 bio8 bio9
+## [1,]   76  937  349  177  172  276  260
+## [2,]   69  918  334  178  156  265  248
+## [3,]   40 6549  336   30  306  115  240
+## [4,]   72 1775  340  162  178  282  243
+## [5,]   56 2251  284  112  172  232  176
+## [6,]   39 6906  348   19  329  228   97
+```
+
+```r
 ped3 <- predict(mod,p)
 head(ped3)
 ```
@@ -1211,14 +804,36 @@ hist(ped3)# creates a histogram of the prediction
 
 ![](Appendix1_case_study_files/figure-html/predict-2.png)<!-- -->
 
+```r
+print(p[1:2,])
+```
+
+```
+##      bio1 bio10 bio11 bio12 bio13 bio14 bio15 bio16 bio17 bio18 bio19 bio2
+## [1,]  269   279   256  1023   294     1   111   637     7   364    36  131
+## [2,]  260   268   245  1724   266    33    57   744   118   430   152  108
+##      bio3 bio4 bio5 bio6 bio7 bio8 bio9
+## [1,]   76  937  349  177  172  276  260
+## [2,]   69  918  334  178  156  265  248
+```
+
+```r
+predict(mod,p[1:2,])
+```
+
+```
+## [1] 0.8311057 0.3677974
+```
+
 ###3.3 Model evaluation
 To evaluate models, we use the *evaluate* function from the "dismo" package. Evaluation indices include AUC, TSS, Sensitivity, Specificity, etc.
 
 #####Thread 19
 
 ```r
-# using "training data" to evaluate 
-#p & a are dataframe/s (the p and a are the training presence and background points)
+# Model evaluation, where p & a are dataframes (training presence and background points)
+
+# Evaluate model with training data
 mod_eval_train <- dismo::evaluate(p=p,a=a,model=mod) 
 print(mod_eval_train)
 ```
@@ -1233,8 +848,9 @@ print(mod_eval_train)
 ```
 
 ```r
+# Evaluate model with testing data
 mod_eval_test <- dismo::evaluate(p=p_test,a=a,model=mod)  
-print(mod_eval_test) # training AUC may be higher than testing AUC
+print(mod_eval_test) 
 ```
 
 ```
@@ -1246,16 +862,24 @@ print(mod_eval_test) # training AUC may be higher than testing AUC
 ## max TPR+TNR at : 0.4066744
 ```
 
+```r
+# training AUC may be higher than testing AUC
+```
+
 To threshold our continuous predictions of suitability into binary predictions we use the threshold function of the "dismo" package. To plot the binary prediction, we plot the predictions that are larger than the threshold.  
 
 #####Thread 20
 
 ```r
 # calculate thresholds of models
-thd1 <- threshold(mod_eval_train,"no_omission") # 0% omission rate 
-thd2 <- threshold(mod_eval_train,"spec_sens") # highest TSS
+thd1 <- threshold(mod_eval_train,stat="no_omission") # 0% omission rate 
+thd2 <- threshold(mod_eval_train,stat="spec_sens") # highest TSS
+thd3 <- threshold(mod_eval_train,stat="sensitivity",sensitivity=0.9) # 10% omission rate, i.e. sensitivity=0.9
+thd4 <- threshold(mod_eval_train,stat="sensitivity",sensitivity=0.95) # 10% omission rate, i.e. sensitivity=0.9
 
-# plotting points that are above the previously calculated thresholded value
+# thresholds are parameters that must be specified you find the list in the help document for the threshold function in the dismo package
+
+# plotting points that are higher than the previously calculated thresholded value
 plot(ped1>=thd1) 
 ```
 
@@ -1264,24 +888,27 @@ plot(ped1>=thd1)
 ##4 Maxent parameters
 ###4.1 Select features
 
+To run the model without using the default setting, we must define Maxent parameters. To do this we will load a function that will allow us to change model parameters. 
+
 #####Thread 21
 
 ```r
 # load the function that prepares parameters for maxent
 source("Appendix2_prepPara.R")
 
+# The defalut setting for features in Maxent is autofeature:
 mod1_autofeature <- maxent(x=pder[c("bio1","bio4","bio11")], 
                            ## env conditions, here we selected only 3 predictors
-                           p=pa,
+                           p=pa, ## 1:presence or 0:absence
                            path=paste0(getwd(),"/output/maxent_outputs"),
-                           ## 1:presence or 0:absence
-                           #path=, # use preppara to prepare the path
-                           ## this is the folder you will find manxent output
+                           #path=,this is the folder you will find manxent output
                            args=prepPara(userfeatures=NULL) 
+                           # use preppara to prepare the path
                            ) 
                            ## default is autofeature
               
-# or select Linear& Quadratic features
+# To move away from the default, autofeatures, and instead select Linear & Quadratic features
+
 mod1_lq <- maxent(x=pder[c("bio1","bio4","bio11")],
                   p=pa,
                   path=paste0(getwd(),"/output/maxent_outputs1_lq"),
@@ -1292,47 +919,92 @@ mod1_lq <- maxent(x=pder[c("bio1","bio4","bio11")],
 
 ###4.2 Change beta-multiplier
 
+The beta-multiplier can be used to restrict or constrain the data to prevent model over-fitting; the default setting in Maxent is 1. Smaller values will constrain the model more, whereas larger numbers will relax the model, making it "smoother".
+
 #####Thread 22
 
 ```r
-#change betamultiplier for all features
-mod2 <- maxent(x=pder[c("bio1","bio4","bio11")], 
+# change beta-multiplier for all features to 0.5, the default beta-multiplier is 1
+mod2_fix <- maxent(x=pder[c("bio1","bio4","bio11")], 
                p=pa, 
-              path=paste0(getwd(),"/output/maxent_outputs2_0.5"), 
-              args=prepPara(userfeatures="LQ",
-                            betamultiplier=0.5) ) 
+              path=paste0(getwd(),"/output/maxent_outputs2_0.1"), 
+              args=prepPara(userfeatures="LQH",
+                            betamultiplier=0.1) ) 
+mod2_relax <- maxent(x=pder[c("bio1","bio4","bio11")], 
+               p=pa, 
+              path=paste0(getwd(),"/output/maxent_outputs2_10"), 
+              args=prepPara(userfeatures="LQH",
+                            betamultiplier=10) ) 
 
+# Show response curves
+# first, silumate some data, build a gradient of conditions for one variable, and keep others constant
+fake_data <- data.frame(bio1=seq(-300,300,1),  
+                        bio4=100,
+                        bio11=100)
+head(fake_data)
+```
+
+```
+##   bio1 bio4 bio11
+## 1 -300  100   100
+## 2 -299  100   100
+## 3 -298  100   100
+## 4 -297  100   100
+## 5 -296  100   100
+## 6 -295  100   100
+```
+
+```r
+ped_fix <- predict(mod2_fix,fake_data)
+ped_relax <- predict(mod2_relax,fake_data)
+plot(fake_data$bio1,ped_fix)
+points(fake_data$bio1,ped_relax,col="red")
+```
+
+![](Appendix1_case_study_files/figure-html/beta_multiplier-1.png)<!-- -->
+
+```r
+# A more complex model, which has three features; linear & quadratic, and hinge. Where a different beta-multipler is used for each feature
 mod2 <- maxent(x=pder[c("bio1","bio4","bio11")], 
                p=pa, 
               path=paste0(getwd(),"/output/maxent_outputs2_complex"), 
               args=prepPara(userfeatures="LQH",
                             ## include L, Q, H features
                             beta_lqp=1.5, 
-                            ## use different betamultiplier for different features
+                            ## use different beta-multiplier for different features
                             beta_hinge=0.5 ) ) 
+# you can also change others
+                    # beta_threshold= 1
+                    # beta_categorical=1
+                    # beta_lqp=1
+                    # beta_hinge=1
 ```
 
 ###4.3 Specify projection layers
 
+Earlier we created a model, and then created a prediction from that model, but here we want to train the model and create a prediction simultaneously (like what happens in Maxent user interface). 
+
 #####Thread 23
 
 ```r
-# note: (1) the projection layers must exist in the hard disk (as relative to computer RAM); 
-# (2) the names of the layers (excluding the name extension) must match the names 
-# of the predictor variables; 
+# note: 
+# (1) the projection layers must exist in the hard disk (as relative to computer RAM); 
+# (2) the names of the layers (excluding the name extension) must match the names of the predictor variables. 
+
+# Create Model
 mod3 <- maxent(x=pder[c("bio1","bio11")], 
                p=pa, 
               path=paste0(getwd(),"/output/maxent_outputs3_prj1"), 
               args=prepPara(userfeatures="LQ",
                             betamultiplier=1,
                             projectionlayers="/data/studyarea") ) 
+              # here we specify the relative path to the layer used in the projection
 
 # load the projected map
 ped <- raster(paste0("output/maxent_outputs3_prj1/species_studyarea.asc"))
 plot(ped)
 
-# we can also project on a broader map, but please 
-# caustion about the inaccuracy associated with model extrapolation.
+# we can also project on a broader map, but please use with caution as there is inaccuracy associated with model extrapolation.
 mod3 <- maxent(x=pder[c("bio1","bio11")], 
                p=pa, 
               path=paste0(getwd(),"/output/maxent_outputs3_prj2"), 
@@ -1347,7 +1019,7 @@ plot(ped)
 ![](Appendix1_case_study_files/figure-html/specify_projection_layers_data_table-1.png)<!-- -->
 
 ```r
-# simply check the difference if we used a different betamultiplier
+# Check for differences if we used a different betamultiplier
 mod3_beta1 <- maxent(x=pder[c("bio1","bio11")], 
                p=pa, 
               path=paste0(getwd(),"/output/maxent_outputs3_prj3"), 
@@ -1364,17 +1036,21 @@ mod3_beta1 <- maxent(x=pder[c("bio1","bio11")],
 ```r
 ped3 <- raster(paste0("output/maxent_outputs3_prj3/species_bioclim.asc"))
 
-plot(ped-crop(ped3,extent(ped))) ## quickly check the difference between the two predictions
+# Here we crop the extent of the larger prediction to the extent of the smaller prediction to look at differences between the two
+ped3 <- crop(ped3,extent(ped)) # "ped3"" is larger in extent, so crop it to the same extent of "ped""
+plot(ped-ped3)
 ```
 
 ![](Appendix1_case_study_files/figure-html/specify_projection_layers_data_table-2.png)<!-- -->
 
 ###4.4 Clamping function
 
+When we project across space and time, we can come across conditions that are outside the range represented by the training data. Thus, we can clamp the response so that the model does not try to extapolate to these "extreme" conditions.
+
 #####Thread 24
 
 ```r
-# enable or disable clamping function; note that clamping function is involved when projecting
+# enable or disable clamping function; note that clamping function is involved when projecting. Turning the clamping function on, gives the response value associated with the marginal value at the edge of the data
 mod4_clamp <- maxent(x=pder[c("bio1","bio11")],
                      p=pa,
                      path=paste0(getwd(),"/output/maxent_outputs4_clamp"), 
@@ -1391,6 +1067,7 @@ mod4_noclamp <- maxent(x=pder[c("bio1","bio11")],
                                       doclamp = FALSE,
                                       projectionlayers="/data/bioclim") ) 
 
+# Load the the two preditions and compare
 ped_clamp <- raster(paste0("output/maxent_outputs4_clamp/species_bioclim.asc") )
 ped_noclamp <- raster(paste0("output/maxent_outputs4_noclamp/species_bioclim.asc") )
 plot(stack(ped_clamp,ped_noclamp))
@@ -1410,6 +1087,8 @@ plot(ped_clamp - ped_noclamp)
 
 ###4.5 Cross validation
 
+To test the robustness of the model settings, we can resample the training and testing data to replicate the model. How the data is resampled, can be specified by the user. Maxent can replicate using crossvalidation, bootstrapping, and subsampling.
+
 #####Thread 25
 
 ```r
@@ -1424,20 +1103,22 @@ mod4_cross <- maxent(x=pder[c("bio1","bio11")], p=pa,
                                           ##possible values are: crossvalidate,bootstrap,subsample
 ```
 
+AUC can be highly influenced by model parameters, specifically training area size. Here we compare two models using the same parameters and setting except we have manipulated the training area size.
+
 ##5 experiment of "high AUC" model
 
 ```r
 # experiment 1: smaller training area vs. whole continent
 
-clim_list <- list.files("data/bioclim/",pattern=".bil$",full.names = T) # '..' leads to the path above the folder where the .rmd file is located
+# Ruturn the path to the climate layers
+clim_list <- list.files("data/bioclim/",pattern=".bil$",full.names = T) 
+
 # stacking the bioclim variables to process them at one go 
 clim <- raster::stack(clim_list) 
 
-# model for smaller training area # model 1: smaller training area, trying to simulate accessible area (M)
+# model for smaller training area 
 small_extent <- buffer(occ_final,width=100000) #unit is meter 
 
-#country_shp <- shapefile("data/GIS polygon/country.shp")
-#extent(occ_final)
 big_extent <- extent(c(-130,-20,-60,60))
 
 small_area <- mask(clim,  small_extent)
@@ -1455,22 +1136,8 @@ plot(big_area[[1]])
 
 ```r
 dir.create("data/big_extent")
-```
-
-```
-## Warning in dir.create("data/big_extent"): 'data/big_extent' already exists
-```
-
-```r
 dir.create("data/small_extent")
-```
 
-```
-## Warning in dir.create("data/small_extent"): 'data/small_extent' already
-## exists
-```
-
-```r
 writeRaster(small_area,
             # a series of names for output files
             filename=paste0("data/small_extent/",names(small_area),".asc"), 
@@ -1557,6 +1224,8 @@ print(mod_eval_big)
 ## max TPR+TNR at : 0.3146109
 ```
 
+
+#####Feng X, Gebresenbet F, Walker C. (2017) Shifting from closed-source graphical-interface to open-source programming environment: a brief tutorial on running Maxent in R. PeerJ Preprints 5:e3346v1 [https://doi.org/10.7287/peerj.preprints.3346v1]    
 
 
 
