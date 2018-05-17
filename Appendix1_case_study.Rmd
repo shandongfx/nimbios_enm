@@ -94,7 +94,7 @@ require(utils)
 if( !file.exists( paste0("data/bioclim/bio_10m_bil.zip")   )){
 utils::download.file(url="http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_10m_bil.zip",
                      destfile=paste0("data/bioclim/bio_10m_bil.zip")) 
-utils::unzip("data/bioclim/bio_10m_bil.zip",exdir="data/bioclim/")
+utils::unzip("data/bioclim/bio_10m_bil.zip",exdir="data/bioclim") #  updated~  "data/bioclim/" will lead to errors in windows
 }
 # This searches for all files that are in the path "data/bioclim/" and 
 # have a file extension of .bil. You can edit this code to reflect the path name 
