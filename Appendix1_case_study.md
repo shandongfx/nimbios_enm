@@ -90,7 +90,7 @@ require(utils)
 if( !file.exists( paste0("data/bioclim/bio_10m_bil.zip")   )){
 utils::download.file(url="http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_10m_bil.zip",
                      destfile=paste0("data/bioclim/bio_10m_bil.zip")) 
-utils::unzip("data/bioclim/bio_10m_bil.zip",exdir="data/bioclim/")
+utils::unzip("data/bioclim/bio_10m_bil.zip",exdir="data/bioclim") #  updated~  "data/bioclim/" will lead to errors in windows
 }
 # This searches for all files that are in the path "data/bioclim/" and 
 # have a file extension of .bil. You can edit this code to reflect the path name 
@@ -1136,8 +1136,22 @@ plot(big_area[[1]])
 
 ```r
 dir.create("data/big_extent")
-dir.create("data/small_extent")
+```
 
+```
+## Warning in dir.create("data/big_extent"): 'data/big_extent' already exists
+```
+
+```r
+dir.create("data/small_extent")
+```
+
+```
+## Warning in dir.create("data/small_extent"): 'data/small_extent' already
+## exists
+```
+
+```r
 writeRaster(small_area,
             # a series of names for output files
             filename=paste0("data/small_extent/",names(small_area),".asc"), 
