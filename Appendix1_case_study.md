@@ -115,7 +115,7 @@ bio1
 ## resolution  : 0.1666667, 0.1666667  (x, y)
 ## extent      : -180, 180, -60, 90  (xmin, xmax, ymin, ymax)
 ## coord. ref. : +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0 
-## data source : /Users/labmac/Desktop/ENM_demo/peerj example/workshop_maxent_R-master/data/bioclim/bio1.bil 
+## data source : /Users/labmac/Google Drive/1_osu_lab/projects/2018_5_NIMBIOS_teach/ENM_demo/peerj example/workshop_maxent_R-master/data/bioclim/bio1.bil 
 ## names       : bio1 
 ## values      : -269, 314  (min, max)
 ```
@@ -902,6 +902,7 @@ mod1_autofeature <- maxent(x=pder[c("bio1","bio4","bio11")],
                            p=pa, ## 1:presence or 0:absence
                            path=paste0(getwd(),"/output/maxent_outputs"),
                            #path=,this is the folder you will find manxent output
+                           #note, for Mac user, the short cut (e.g. "~/Desktop") for home directory may lead to errors.
                            args=prepPara(userfeatures=NULL) 
                            # use preppara to prepare the path
                            ) 

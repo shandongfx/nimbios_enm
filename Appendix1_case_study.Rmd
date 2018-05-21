@@ -55,7 +55,7 @@ library("rJava")
 #settings for the R-markdown document
 library("knitr")
 #knitr::opts_knit$set(root.dir = '/Users/labmac/Desktop/ENM_demo/peerj example/workshop_maxent_R-master/code/')
-knitr::opts_knit$set(root.dir = '/Users/labmac/Desktop/ENM_demo/peerj example/workshop_maxent_R-master/')
+knitr::opts_knit$set(root.dir = '/Users/labmac/Google Drive/1_osu_lab/projects/2018_5_NIMBIOS_teach/ENM_demo/peerj example/workshop_maxent_R-master')
 opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 ```
 
@@ -63,7 +63,7 @@ opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 In order for Maxent to work properly in R, the *maxent.jar* file needs to be accessible by *dismo* package.  
 
 #####Thread 4
-```{r maxent,message=FALSE}
+```{r maxent,message=FALSE}`
 # download maxent.jar 3.3.3k, and place the file in the desired folder; note that, there may be a newer version of Maxent
 if( !file.exists(paste0(system.file("java", package="dismo"),"/maxent.jar"))  )   {
 utils::download.file(url="https://raw.githubusercontent.com/mrmaxent/Maxent/master/ArchivedReleases/3.3.3k/maxent.jar",
@@ -545,6 +545,7 @@ mod1_autofeature <- maxent(x=pder[c("bio1","bio4","bio11")],
                            p=pa, ## 1:presence or 0:absence
                            path=paste0(getwd(),"/output/maxent_outputs"),
                            #path=,this is the folder you will find manxent output
+                           #note, for Mac user, the short cut (e.g. "~/Desktop") for home directory may lead to errors.
                            args=prepPara(userfeatures=NULL) 
                            # use preppara to prepare the path
                            ) 
