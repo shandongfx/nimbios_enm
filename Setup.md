@@ -5,7 +5,7 @@ This tutorial will guide you to process spatial data and implement Maxent modeli
 ### Step 1: install the list of software and libraries 
 (partly adapted from [data carpentry](https://datacarpentry.org/geospatial-workshop/setup.html))
 
-| Name | Type | Need | Install | Description and notes &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+| Name | Type | Need | Install | Description and notes |
 | -------- | ------------ | - | ------------- | ----------- |
 | R | software | Yes | Go to CRAN’s [cloud download page](https://cloud.r-project.org/) and select the version for your operating system. Download the base subdirectory and install it on your computer. | Software environment for statistical and scientific computing |
 | RStudio | software | Yes| Go to RStudio [download page](https://www.rstudio.com/products/rstudio/download/#download) and select RStudio Desktop for your operating system. Download and install it on your computer.| Graphic User Interface (GUI) for R|
