@@ -47,20 +47,20 @@ prepPara <- function(userfeatures=NULL, #NULL=autofeature, could be any combinat
   
   #6 outputdirectory
   if(!is.null(outputdirectory))   {
-    if(flag_relative_path){
-      args_out <- c(args_out,paste0("outputdirectory=",getwd(),outputdirectory))
-    } else {
+    #if(flag_relative_path){
+    #  args_out <- c(args_out,paste0("outputdirectory=",getwd(),outputdirectory))
+    #} else {
       args_out <- c(args_out,paste0("outputdirectory=",outputdirectory))
-    }
+    #}
   }
   
   #7
   if(!is.null(projectionlayers))   {
-    if(flag_relative_path){
-    args_out <- c(args_out,paste0("projectionlayers=",getwd(),projectionlayers))
-    } else {
+    #if(flag_relative_path){
+    #args_out <- c(args_out,paste0("projectionlayers=",getwd(),projectionlayers))
+    #} else {
       args_out <- c(args_out,paste0("projectionlayers=",projectionlayers))
-      }
+    # }
   }
   #10
   if(randomseed) args_out <- c(args_out,"randomseed") else args_out <- c(args_out,"norandomseed")
